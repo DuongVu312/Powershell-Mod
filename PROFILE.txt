@@ -1,0 +1,244 @@
+#Reminder
+Write-Host "Hello Duong, have a nice day! `nRemember to use aliases!!! `ntype 'myalias' to see peronal aliases" -ForegroundColor Green
+
+#Aliases
+Set-Alias tt tree
+Set-Alias g git
+Set-Alias ll ls
+Set-Alias vim nvim
+Set-Alias cdl cdls
+Set-Alias "git addstt" gitaddstatus
+Set-Alias e exitnew
+
+#Prompt
+oh-my-posh init pwsh --config "$env:POSH_THEMES_PATH\montys.omp.json" | Invoke-Expression
+
+#Function
+function shutdown {
+    param (
+        [int]$Delay = 0
+    )
+    Start-Sleep -Seconds $Delay
+    Stop-Computer -Force
+}
+
+function exitnew {
+    Write-Host "Goodbye! See you again soon!" -ForegroundColor Green
+    Start-Sleep -Seconds 2  # T?m d?ng ©¢? hi?n th? th?ng b?o
+    exit  # Tho?t kh?i PowerShell
+}
+
+function myalias{
+	Write-Host "`nAliases	   	 Commands" -ForegroundColor Green
+	Write-Host "-------	   	 --------" -ForegroundColor Green
+	Write-Host "shutdown	 Stop-Computer"
+	Write-Host "tt	   	 tree"
+	Write-Host "g		 git"
+	Write-Host "ll		 ls"
+	Write-Host "vim		 nvim"
+	Write-Host "z		 cdls"
+	Write-Host "git addstt	 gitaddstatus"
+	Write-Host "e		 exitnew`n"
+}
+
+function whereisapp {
+    param (
+        [string]$command
+    )
+
+    $result = Get-Command -Name $command -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty Path -ErrorAction SilentlyContinue
+	
+	Write-Host "Found application:`n"
+    if ($result) {
+        Write-Host "	$result" -ForegroundColor Green
+    } else {
+        Write-Host "Warning: Application '$command' not found." -ForegroundColor Red
+    }
+	Write-Host "`n"
+}
+
+function whereisfile {
+    param (
+        [string]$name,
+        [string[]]$extensions = @(
+    		".txt", ".doc", ".docx", ".pdf", ".xlsx", ".pptx",
+    		".c", ".cpp", ".h", ".py", ".js", ".html", ".htm",
+    		".csv", ".json", ".xml",
+    		".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif",
+   		".mp3", ".wav", ".aac",
+   		".mp4", ".avi", ".mkv",
+   		".zip", ".rar", ".7z",
+    		".exe", ".msi",
+    		".iso", ".dll"
+	),
+	[string]$drive = $null,
+        [switch]$all
+    )
+
+    # Ki?m tra ©¢?nh d?ng file
+    if (-not $extensions -contains [System.IO.Path]::GetExtension($name)) {
+        Write-Host "`nWarning: The file '$name' does not have a format or it is not a valid format." -ForegroundColor Yellow
+	Write-Host "         filename.[format] - Example: text.txt`n" -ForegroundColor Yellow
+        return
+    }
+
+    if (-not $drive -and -not $all) {
+        $currentPath = Get-Location
+        $drives = @($currentPath.Path)
+    } elseif ($all) {
+        $drives = Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root
+    } else {
+        $drives = @($drive)
+    }
+
+    $found = $false
+
+    foreach ($drive in $drives) {
+        if (Test-Path $drive) {
+            $results = Get-ChildItem -Path $drive -Recurse -File -ErrorAction SilentlyContinue | 
+                       Where-Object { 
+                           $_.Name -like "*$name*" 
+                       }
+	    Write-Host "Found file(s):`n"
+            if ($results) {
+                foreach ($result in $results) {
+                    Write-Host "	$($result.FullName)" -ForegroundColor Green
+                }
+                $found = $true
+            }
+	    Write-Host "`n"
+        } else {
+            Write-Host "`nDrive '$drive' is not valid.`n" -ForegroundColor Red
+        }
+    }
+
+    if (-not $found) {
+        Write-Host "File '$name' not found on specified drive(s)." -ForegroundColor Yellow
+    }
+}
+
+
+function whereisdir {
+    param (
+        [string]$name,
+        [string]$drive = $null,
+        [switch]$all
+    )
+
+    if (-not $drive -and -not $all) {
+        $currentPath = Get-Location
+        $drives = @($currentPath.Path)
+    } elseif ($all) {
+        $drives = Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root
+    } else {
+        $drives = @($drive)
+    }
+
+    $found = $false
+
+    foreach ($drive in $drives) {
+        if (Test-Path $drive) {
+            $results = Get-ChildItem -Path $drive -Recurse -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*$name*" }
+	    
+	    Write-Host "Found Directory(es):`n"
+            if ($results) {
+                foreach ($result in $results) {
+                    Write-Host "	$($result.FullName)" -ForegroundColor Green
+                }
+                $found = $true
+            }
+	    Write-Host "`n"
+        } else {
+            Write-Host "`nDrive '$drive' is not valid.`n" -ForegroundColor Red
+        }
+    }
+
+    if (-not $found) {
+        Write-Host "Directory '$name' not found on specified drive(s)." -ForegroundColor Yellow
+    }
+}
+
+
+function cdls{
+	param([string]$path  = ".")
+	Set-Location -Path $path
+	Get-ChildItem
+}
+
+function gitaddstatus{
+	param([string]$path  = ".")
+	git add $path
+	git status
+}
+
+function touch {
+    param (
+        [string]$path
+    )
+    if (-Not (Test-Path $path)) {
+        New-Item -Path $path -ItemType File | Out-Null
+    } else {
+        # C?p nh?t timestamp b?ng c?ch ghi l?i file
+        Set-Content -Path $path -Value $null
+    }
+	
+	Get-ChildItem
+}
+
+function mkdir {
+    param (
+        [string]$path
+    )
+    New-Item -Path $path -ItemType Directory -Force | Out-Null
+	
+	Get-ChildItem
+}
+
+function rm {
+    param (
+        [string]$path,
+        [switch]$force, # T?y ch?n ©¢? bu?c x?a
+        [switch]$recurse # T?y ch?n ©¢? x?a th? m?c v? n?i dung c?a n?
+    )
+
+    if (-not (Test-Path $path)) {
+        Write-Host "Error: The path '$path' does not exist."
+        return
+    }
+
+    try {
+        # X?a item v?i t?y ch?n bu?c v? ©¢? quy n?u ©¢??c ch? ©¢?nh
+        if ($recurse) {
+            Remove-Item -Path $path -Recurse -Force:$force -ErrorAction Stop
+        } else {
+            Remove-Item -Path $path -Force:$force -ErrorAction Stop
+        }
+        Write-Host "Successfully removed: $path"
+    } catch {
+        Write-Host "Error: $_"
+    }
+}
+
+#Import Modules
+Import-Module Terminal-Icons
+Import-Module PSReadLine
+Import-Module Microsoft.PowerShell.UnixTabCompletion
+Import-Module PSBashCompletions
+Import-Module -Name CompletionPredictor
+Import-Module posh-git
+
+
+Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+Set-PSReadLineOption -PredictionViewStyle ListView
+# Set-PSReadLineKeyHandler -Key Tab -Function Complete
+Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+ 
+Set-PSReadLineOption -ShowToolTips
+Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
+Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
+ 
+#Enable-PowerType
+Set-PSReadLineOption -PredictionSource HistoryAndPlugin -PredictionViewStyle ListView # Optional
+
+
